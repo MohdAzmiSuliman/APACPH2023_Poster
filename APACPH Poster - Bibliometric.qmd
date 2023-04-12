@@ -1,0 +1,80 @@
+---
+title: "APACPH Poster - Bibliometric"
+format: html
+---
+
+# Preamble
+
+
+
+# Analysis
+
+```{r}
+#| label: setup
+
+pacman::p_load(tidyverse, 
+               bibliometrix,
+               janitor,       # data cleaning
+               stringr)
+
+bibds_pm <- convert2df(file = "23-04-12 scopus search.bib",
+                       dbsource = "scopus",
+                       format = "bibtex")
+
+missingData(bibds_pm)
+
+```
+
+## General Information
+
+```{r}
+bibres <- biblioAnalysis(bibds_pm, sep = ";")
+
+bibres_summary <- summary(bibres, k = 25)
+
+#plot(bibres, k = 25)
+```
+
+
+## Language
+
+```{r}
+bib_lang <- bibds_pm %>% 
+  group_by(LA) %>% 
+  summarise(n = n()) %>% 
+  mutate(percent = n / sum(n) * 100,
+         percent = round(percent, 1)) %>% 
+  arrange(desc(n))
+
+bib_lang
+```
+
+## Countries
+
+```{r}
+bibres_countrylist <- bibres$Countries
+
+bibres_countrytable <- tibble(Rank = seq_along(bibres_countrylist),
+                              Country = rownames(bibres_countrylist),
+                              Np = as.integer(bibres_countrylist))
+
+bibres_countrytable
+
+bibressum_countrytable <- tibble(Rank = 1:25,
+                                 bibres_summary$TCperCountries) %>% 
+  rename("Country" = "Country     ") %>% 
+  mutate(Country = str_trim(Country),
+         Country = fct_reorder(Country, Rank),
+         `Total Citations` = as.integer(`Total Citations`),
+         `Average Article Citations` = as.double(`Average Article Citations`),
+         percent = `Total Citations` / sum(`Total Citations`) * 100,
+         percent = round(percent,1)) %>% 
+  inner_join(x = ., y = select(bibres_countrytable, Country, Np), 
+             by = "Country") %>% 
+  relocate(percent, .after = `Total Citations`)
+
+bibressum_countrytable
+```
+
+## Affiliation
+
