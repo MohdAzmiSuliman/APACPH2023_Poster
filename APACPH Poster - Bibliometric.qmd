@@ -1,6 +1,29 @@
 ---
 title: "APACPH Poster - Bibliometric"
-format: html
+date: last-modified
+date-format: "dddd, DD/MM/YYYY"
+format: 
+  html:
+    theme: sandstone
+    code-fold: true
+    code-copy: hover
+    code-overflow: wrap
+    code-tools: true
+    df-print: paged
+    default-image-extension: svg
+    embed-resources: true
+    page-layout: full
+    reference-location: margin
+    title-block-banner: true
+    title-block-style: default
+    fontsize: .9em
+    monofont: 'Fira Code'
+execute: 
+  warning: false
+number-sections: true
+toc: true
+fig-dpi: 320
+dpi: 320
 ---
 
 # Preamble
@@ -17,7 +40,7 @@ pacman::p_load(tidyverse,
                janitor,       # data cleaning
                stringr)
 
-bibds_pm <- convert2df(file = "23-04-12 scopus search.bib",
+bibds_pm <- convert2df(file = "23-05-22 scopus search.bib",
                        dbsource = "scopus",
                        format = "bibtex")
 
