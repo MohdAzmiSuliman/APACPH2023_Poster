@@ -1,0 +1,68 @@
+---
+title: "APACPH Poster - Bibliometric (WOS)"
+date: last-modified
+date-format: "dddd, DD/MM/YYYY"
+format: 
+  html:
+    theme: sandstone
+    code-fold: true
+    code-copy: hover
+    code-overflow: wrap
+    code-tools: true
+    df-print: paged
+    default-image-extension: svg
+    embed-resources: true
+    page-layout: full
+    reference-location: margin
+    title-block-banner: true
+    title-block-style: default
+    fontsize: .9em
+    monofont: 'Fira Code'
+execute: 
+  warning: false
+number-sections: true
+toc: true
+fig-dpi: 320
+dpi: 320
+---
+
+# Preamble
+
+Abstract: 
+
+Introduction: Stroke caregivers often experience burdens due to their caregiving responsibilities. Understanding this burden is crucial for developing effective interventions and support strategies. This study aims to provide a comprehensive overview of global research on stroke caregiver burden using bibliometric analysis, which will help identify research trends, influential publications and trending keywords to inform future research. 
+
+Methodology: Bibliographic data of publications on stroke caregiver burden were extracted from the Scopus database, using search terms related to stroke caregiver burden in the title. Only original articles or review articles in English, up until 2022, were included in the analysis. The 'bibliometrix' package in R and RStudio software was used to analyse quantitatively and visualise the bibliographic data. Among the parameters measured were (1) influential authors, institutions and countries; (2) trending keywords and (3) collaborative networks. 
+
+Result: Between 1995 to 2022, there were 147 publications retrieved from 99 sources, authored by 646 authors. The number of publications on stroke caregivers' burden has steadily increased since 1975 and experienced a significant rise after 2016, with a 12.13% annual growth rate. The most productive authors were Grabowska-Fudala B, Jaracz K and van den Bos GA, with six articles each. Anderson CS authored the most cited article with a total citation of 433, while when adjusted to year published, the most cited article per year was an article authored by Zorowith RD with a total citation per year of 16.55. Most corresponding authors were from The USA, with 17 articles, while the most productive journal was the "Stroke" journal, with eight publications. Apart from the keyword "stroke", "caregiver", and "burden", other commonly used keywords by the authors include "quality of life", "depression", "rehabilitation", "anxiety", and "nursing". Our study showed steadily increasing research activities on stroke caregiver burden. Our co-occurrence keyword thematic map suggests that the cluster focusing on "public health" and "quality in health care," as well as the cluster related to "mental health" and "rehabilitation medicine," are crucial topics that merit further research in the future. Our co-occurrence keyword thematic map suggests that the cluster focusing on "public health" and "quality in health care," as well as the cluster related to "mental health" and "rehabilitation medicine," are crucial topics that merit further research in the future. 
+
+Conclusion: Researchs on stroke caregiver burdens were often published in high-quality stroke-related journals and by high-income countries, suggesting the need to improve research capability via collaboration and networking.
+
+# Analysis
+
+```{r}
+#| label: setup
+
+pacman::p_load(tidyverse, 
+               bibliometrix,
+               janitor,       # data cleaning
+               stringr)
+
+bibds_pm <- convert2df(file = "23-05-24 wos search.txt",
+                       dbsource = "wos", 
+                       format = "plaintext")
+
+bibres <- biblioAnalysis(bibds_pm, sep = ";")
+```
+
+## Descriptive
+
+```{r}
+bibres_summary <- summary(bibres)
+```
+
+```{r}
+bibres_summary$MainInformation
+
+```
+
