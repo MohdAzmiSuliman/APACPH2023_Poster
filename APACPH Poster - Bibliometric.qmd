@@ -61,6 +61,16 @@ bibres_summary <- summary(bibres, k = 25)
 ### Publication per year
 
 ```{r}
+subset1 <- tibble(Article = rownames(bibds_pm), Year = bibds_pm$PY) %>%
+  filter(Year <= 2012) %>% 
+  group_by(Year) %>% 
+  summarise(n = n())
+subset2 <- tibble(Article = rownames(bibds_pm), Year = bibds_pm$PY) %>%
+  filter(Year >= 2010) %>% 
+  group_by(Year) %>% 
+  summarise(n = n())
+
+
 tibble(Article = rownames(bibds_pm),
        Year = bibds_pm$PY) %>% 
   group_by(Year) %>% 
@@ -69,6 +79,8 @@ tibble(Article = rownames(bibds_pm),
   geom_area(alpha = .2) +
   geom_point() +
   geom_line() +
+  geom_smooth(data = subset1, se = F, method = "lm", aes(y = n+2), linetype = 2) +
+  geom_smooth(data = subset2, se = F, method = "lm", aes(y = n+4), linetype = 2) +
   scale_y_continuous(breaks = seq(0,28,4)) +
   scale_x_continuous(breaks = seq(1987,2023,4)) +
   coord_cartesian(ylim = c(0,28)) +
@@ -282,13 +294,27 @@ error also
 ## Articles
 
 ```{r}
+tibble(bibres_summary$MostCitedPapers) %>% 
+  select(DOI, TC, TCperYear) %>% 
+  arrange(desc(TCperYear)) %>% 
+  head(n = 10) %>% 
+  kable() %>% kable_classic()
+  
+
+```
+
+
+
+
+```{r}
 tibble(Title = bibds_pm$TI,
        Author = bibds_pm$AU,
        DOI = bibds_pm$DI,
        Citations = bibds_pm$TC) %>% 
   mutate(across(.cols = c(Title, Author), .fns = str_to_title)) %>% 
   arrange(desc(Citations)) %>% 
-  head(n=10)
+  head(n=10) %>% 
+  kable() %>% kable_classic()
 ```
 
 ## Keyword
@@ -298,15 +324,15 @@ cbind(Rank = 1:25, bibres_summary$MostRelKeywords)
 ```
 
 ```{r}
-bib_kwco_NetMatrix <- biblioNetwork(bibds_pm, analysis = "co-occurrences", 
-                                     network = "keywords", sep = ";")
-
-bib_kwco_Plot <- networkPlot(bib_kwco_NetMatrix, normalize = "association", 
-                             n = 20, Title = "Keyword Co-occurences", 
-                             cluster = "optimal", type = "fruchterman", 
-                             size.cex = T, size = 20,  remove.multiple = F, 
-                             edgesize = 7, labelsize = 3, label.cex = T, 
-                             label.n = 20, edges.min = 10)
+# bib_kwco_NetMatrix <- biblioNetwork(bibds_pm, analysis = "co-occurrences", 
+#                                      network = "keywords", sep = ";")
+# 
+# bib_kwco_Plot <- networkPlot(bib_kwco_NetMatrix, normalize = "association", 
+#                              n = 20, Title = "Keyword Co-occurences", 
+#                              cluster = "optimal", type = "fruchterman", 
+#                              size.cex = T, size = 20,  remove.multiple = F, 
+#                              edgesize = 7, labelsize = 3, label.cex = T, 
+#                              label.n = 20, edges.min = 10)
 ```
 
 for co-occurence network, using biblioshiny is nicer
