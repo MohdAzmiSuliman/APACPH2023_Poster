@@ -38,7 +38,8 @@ dpi: 320
 pacman::p_load(tidyverse, 
                bibliometrix,
                janitor,       # data cleaning
-               stringr)
+               stringr,
+               kableExtra)
 
 bibds_pm <- convert2df(file = "23-05-22 scopus search.bib",
                        dbsource = "scopus",
@@ -61,14 +62,10 @@ bibres_summary <- summary(bibres, k = 25)
 ### Publication per year
 
 ```{r}
-subset1 <- tibble(Article = rownames(bibds_pm), Year = bibds_pm$PY) %>%
-  filter(Year <= 2012) %>% 
-  group_by(Year) %>% 
-  summarise(n = n())
-subset2 <- tibble(Article = rownames(bibds_pm), Year = bibds_pm$PY) %>%
-  filter(Year >= 2010) %>% 
-  group_by(Year) %>% 
-  summarise(n = n())
+subset1 <- tibble(Year = 1995:2011,
+                  n = 1.5 * exp(0.08 * (1995:2011 -1995)))
+subset2 <- tibble(Year = 2011:2022, 
+                  n = 5.5 * exp(0.13 * (2011:2022 -2011))) 
 
 
 tibble(Article = rownames(bibds_pm),
@@ -79,8 +76,8 @@ tibble(Article = rownames(bibds_pm),
   geom_area(alpha = .2) +
   geom_point() +
   geom_line() +
-  geom_smooth(data = subset1, se = F, method = "lm", aes(y = n+2), linetype = 2) +
-  geom_smooth(data = subset2, se = F, method = "lm", aes(y = n+4), linetype = 2) +
+  geom_line(data = subset1, linetype = 2, linewidth = 1, alpha = .4) +
+  geom_line(data = subset2, linetype = 4, linewidth = 1, alpha = .4) +
   scale_y_continuous(breaks = seq(0,28,4)) +
   scale_x_continuous(breaks = seq(1987,2023,4)) +
   coord_cartesian(ylim = c(0,28)) +
@@ -309,6 +306,7 @@ tibble(bibres_summary$MostCitedPapers) %>%
 ```{r}
 tibble(Title = bibds_pm$TI,
        Author = bibds_pm$AU,
+       Year = bibds_pm$PY,
        DOI = bibds_pm$DI,
        Citations = bibds_pm$TC) %>% 
   mutate(across(.cols = c(Title, Author), .fns = str_to_title)) %>% 
