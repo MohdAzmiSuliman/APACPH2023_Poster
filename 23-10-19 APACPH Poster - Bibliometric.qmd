@@ -1,0 +1,347 @@
+---
+title: "APACPH Poster - Bibliometric"
+date: last-modified
+date-format: "dddd, DD/MM/YYYY"
+format: 
+  html:
+    theme: sandstone
+    code-fold: true
+    code-copy: hover
+    code-overflow: wrap
+    code-tools: true
+    df-print: paged
+    default-image-extension: svg
+    embed-resources: true
+    page-layout: full
+    reference-location: margin
+    title-block-banner: true
+    title-block-style: default
+    fontsize: .9em
+    monofont: 'Fira Code'
+execute: 
+  warning: false
+number-sections: true
+toc: true
+fig-dpi: 320
+dpi: 320
+---
+
+# Preamble
+
+
+
+# Analysis
+
+```{r}
+#| label: setup
+
+pacman::p_load(tidyverse, 
+               bibliometrix,
+               janitor,       # data cleaning
+               stringr,
+               kableExtra)
+
+bibds_pm <- convert2df(file = "23-05-22 scopus search.bib",
+                       dbsource = "scopus",
+                       format = "bibtex")
+
+missingData(bibds_pm)
+
+bibres <- biblioAnalysis(bibds_pm, sep = ";")
+```
+
+## General Information
+
+```{r}
+
+bibres_summary <- summary(bibres, k = 25)
+
+#plot(bibres, k = 25)
+```
+
+### Publication per year
+
+```{r}
+subset1 <- tibble(Year = 1995:2011,
+                  n = 1.5 * exp(0.08 * (1995:2011 -1995)))
+subset2 <- tibble(Year = 2011:2022, 
+                  n = 5.5 * exp(0.13 * (2011:2022 -2011))) 
+
+
+tibble(Article = rownames(bibds_pm),
+       Year = bibds_pm$PY) %>% 
+  group_by(Year) %>% 
+  summarise(n = n()) %>% 
+  ggplot(aes(x = Year, y = n)) +
+  geom_area(alpha = .2) +
+  geom_point() +
+  geom_line() +
+  geom_line(data = subset1, linetype = 2, linewidth = 1, alpha = .4) +
+  geom_line(data = subset2, linetype = 4, linewidth = 1, alpha = .4) +
+  scale_y_continuous(breaks = seq(0,28,4)) +
+  scale_x_continuous(breaks = seq(1987,2023,4)) +
+  coord_cartesian(ylim = c(0,28)) +
+  labs(x = "Year", y = "Number of Publication") +
+  theme_bw()
+```
+
+
+## Language
+
+```{r}
+bib_lang <- bibds_pm %>% 
+  group_by(LA) %>% 
+  summarise(n = n()) %>% 
+  mutate(percent = n / sum(n) * 100,
+         percent = round(percent, 1)) %>% 
+  arrange(desc(n))
+
+bib_lang
+```
+
+## Countries
+
+```{r}
+bibres_countrylist <- bibres$Countries
+
+bibres_countrytable <- tibble(Rank = seq_along(bibres_countrylist),
+                              Country = rownames(bibres_countrylist),
+                              Np = as.integer(bibres_countrylist))
+
+bibres_countrytable
+
+bibressum_countrytable <- tibble(Rank = 1:25,
+                                 bibres_summary$TCperCountries) %>% 
+  rename("Country" = "Country     ") %>% 
+  mutate(Country = str_trim(Country),
+         Country = fct_reorder(Country, Rank),
+         `Total Citations` = as.integer(`Total Citations`),
+         `Average Article Citations` = as.double(`Average Article Citations`),
+         percent = `Total Citations` / sum(`Total Citations`) * 100,
+         percent = round(percent,1)) %>% 
+  inner_join(x = ., y = select(bibres_countrytable, Country, Np), 
+             by = "Country") %>% 
+  relocate(percent, .after = `Total Citations`)
+
+bibressum_countrytable
+```
+
+
+```{r}
+bib_concolab <- metaTagExtraction(bibds_pm, Field = "AU_CO", sep = ";")
+
+bib_concolab_NetMatrix <- biblioNetwork(bib_concolab, analysis = "collaboration",
+                                        network = "countries", sep = ";")
+
+bib_concolab_Plot <- networkPlot(bib_concolab_NetMatrix,
+                                 n = dim(bib_concolab_NetMatrix)[1],
+                                 Title = "Country collaboration",
+                                 type = "auto",
+                                 size=20,
+                                 size.cex=T,
+                                 edgesize = 2,
+                                 labelsize=1,
+                                 #edges.min = 1,
+                                 remove.isolates = T,
+                                 community.repulsion = 0,
+                                 cluster = "optimal"
+                                 )
+```
+
+for collaboration network, using biblioshiny is nicer
+
+
+## Institution
+
+```{r}
+bibres_instlist <- bibres$Affiliations
+
+bibres_insttable <- tibble(Rank = seq_along(bibres_instlist),
+                           InstitutionAffiliation = rownames(bibres_instlist),
+                           Np = as.integer(bibres_instlist)) %>% 
+  mutate(InstitutionAffiliation = fct_reorder(InstitutionAffiliation, Rank))
+
+bibres_insttable
+```
+
+
+```{r}
+bib_educolab_NetMatrix <- biblioNetwork(bibds_pm, analysis = "collaboration",
+                                       network = "universities", sep = ";")
+
+bib_educolab_Plot <- networkPlot(bib_educolab_NetMatrix, 
+                                 n = 100, 
+                                 cluster = "optimal", 
+                                 type = "auto",
+                                 size.cex = F, 
+                                 size = 3, 
+                                 remove.multiple = F,
+                                 labelsize=1, 
+                                 alpha = .7, 
+                                 edgesize = 1,
+                                 edges.min = 2, 
+                                 remove.isolates = T, 
+                                 community.repulsion = 0,
+                                 Title = "Institutions collaboration")
+
+```
+
+
+## Journal
+
+
+
+```{r}
+bibres_sourcelist <- bibres$Sources
+
+bibres_sourcetable <- tibble(Rank = seq_along(bibres_sourcelist),
+                             SourceJournal = rownames(bibres_sourcelist),
+                             Np = as.integer(bibres_sourcelist)) %>% 
+  mutate(SourceJournal = fct_reorder(SourceJournal, Rank))
+
+bibres_sourcetable
+
+bibres_sourcetablepercent <- bibres_sourcetable %>% 
+  count(Np) %>% 
+  mutate(percent = n / sum(n) * 100,
+         percent = round(percent,1))
+
+bibres_sourcetablepercent
+
+bib_bradford <- bradford(bibds_pm)
+
+bib_bradfordtable <- bib_bradford$table %>% 
+  select(Zone, Freq, Rank) %>% 
+  tibble() %>% 
+  group_by(Zone) %>% 
+  summarise(nSO = n(),
+            nArt = sum(Freq),
+            RankRange = str_c(min(Rank), max(Rank), sep = "-")) %>% 
+  mutate(percent = nArt / sum(nArt) * 100,
+         percent = round(percent,1))
+
+bib_bradfordtable
+```
+
+```{r}
+# bib_CRSO <- metaTagExtraction(bibds_pm, Field = "CR_SO", sep = ";")
+# bib_CRSO_NetMatrix <- biblioNetwork(bib_CRSO, analysis = "co-citation", 
+#                                     network = "sources", sep = ";")
+# bib_CRSO_Plot <- networkPlot(bib_CRSO_NetMatrix, n = 20, 
+#                              Title = "Co-citation Network", type = "auto", 
+#                              size.cex = T, size = 20, remove.multiple = F,
+#                              labelsize = 1, edgesize = 5, edges.min = 5, alpha = 1)
+```
+
+co-citation network not available
+
+
+## Author
+
+```{r}
+bibds_noaufreq <- bibds_pm %>% 
+  select(TI, AU, DT) %>% 
+  tibble() %>% 
+  mutate(no_auth = str_count(AU, pattern = ";") + 1) %>% 
+  rename("paper" = "TI", "author" = "AU", "type" = "DT") %>% 
+  group_by(no_auth, type) %>% 
+  summarise(freq = n(), .groups = "drop") %>% 
+  mutate(percent = freq / sum(freq) * 100,
+         percent = round(percent,1))
+
+bibds_noaufreq %>% 
+  ggplot(aes(no_auth, freq)) + 
+  geom_bar(stat = "identity") + 
+  labs(x = "Number of Authors", y = "Frequency (Number of Articles)") + 
+  scale_x_continuous(breaks = seq(-3,30,2)) +
+  scale_y_continuous(breaks = seq(-2,40,4)) +
+  theme_bw()
+
+
+bibres_aulist <- bibres$Authors
+
+bibres_autable <- tibble(Rank = seq_along(bibres_aulist),
+                         Author = rownames(bibres_aulist),
+                         Np = as.integer(bibres_aulist)) %>% 
+  mutate(Author = fct_reorder(Author, Rank))
+
+bibres_autable
+
+bibres_autablepercent <- bibres_autable %>% 
+  count(Np) %>% 
+  mutate(percent = n / sum(n) * 100,
+         percent = round(percent,1))
+
+bibres_autablepercent
+```
+
+```{r}
+# bib_AuCoupling_NetMatrix <- biblioNetwork(bibds_pm, analysis = "coupling",
+#                                           network = "authors", sep = ";")
+# 
+# bib_AuCoupling_Plot <- networkPlot(bib_AuCoupling_NetMatrix, n = 15, 
+#                                    cluster = "optimal", type = "auto", 
+#                                    size.cex = T, size = 20, remove.multiple = F,
+#                                    Title = "Bibliographic coupling of the authors",
+#                                    alpha = .7)
+```
+
+error also
+
+## Articles
+
+```{r}
+tibble(bibres_summary$MostCitedPapers) %>% 
+  select(DOI, TC, TCperYear) %>% 
+  arrange(desc(TCperYear)) %>% 
+  head(n = 10) %>% 
+  kable() %>% kable_classic()
+  
+
+```
+
+
+
+
+```{r}
+tibble(Title = bibds_pm$TI,
+       Author = bibds_pm$AU,
+       Year = bibds_pm$PY,
+       DOI = bibds_pm$DI,
+       Citations = bibds_pm$TC) %>% 
+  mutate(across(.cols = c(Title, Author), .fns = str_to_title)) %>% 
+  arrange(desc(Citations)) %>% 
+  head(n=10) %>% 
+  kable() %>% kable_classic()
+```
+
+## Keyword
+
+```{r}
+cbind(Rank = 1:25, bibres_summary$MostRelKeywords)
+```
+
+```{r}
+# bib_kwco_NetMatrix <- biblioNetwork(bibds_pm, analysis = "co-occurrences", 
+#                                      network = "keywords", sep = ";")
+# 
+# bib_kwco_Plot <- networkPlot(bib_kwco_NetMatrix, normalize = "association", 
+#                              n = 20, Title = "Keyword Co-occurences", 
+#                              cluster = "optimal", type = "fruchterman", 
+#                              size.cex = T, size = 20,  remove.multiple = F, 
+#                              edgesize = 7, labelsize = 3, label.cex = T, 
+#                              label.n = 20, edges.min = 10)
+```
+
+for co-occurence network, using biblioshiny is nicer
+
+
+```{r}
+bib_thememap <- thematicMap(bibds_pm, field = "DE", n = 200, minfreq = 20, 
+                            stemming = F, size = .5, n.labels = 4, repel = T)
+
+plot(bib_thememap$map)
+```
+
+
+
