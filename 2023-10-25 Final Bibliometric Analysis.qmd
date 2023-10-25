@@ -38,6 +38,16 @@ dpi: 320
 
 # Data Preparation (Setup)
 
+**Search Syntax**
+
+1.  Database: [Scopus](https://www.scopus.com/search/form.uri?display=advanced)
+
+2.  Query String: 
+
+> TITLE ( stroke\* ) AND ( TITLE ( caregiv\* ) OR TITLE ( carer\* ) OR TITLE ( famil\* ) ) AND ( TITLE ( burden ) OR TITLE ( strain ) OR TITLE ( burnout ) OR TITLE ( fatigue ) ) AND PUBYEAR \< 2023 AND ( LIMIT-TO ( DOCTYPE , "ar" ) OR LIMIT-TO ( DOCTYPE , "re" ) ) AND ( LIMIT-TO ( LANGUAGE , "English" ) )
+
+3.  File Types: BibTex
+
 ```{r}
 #| label: setup
 
@@ -76,7 +86,6 @@ bibres_summary <- summary(bibres, k = 25)
 bibres_summary95_10 <- summary(bibres95_10, k = 25)
 bibres_summary11_22 <- summary(bibres11_22, k = 25)
 ```
-
 
 ## Publication per year
 
@@ -133,7 +142,6 @@ tibble(bibres_summary$MostCitedPapers) %>%
   kable() %>% kable_classic()
 ```
 
-
 ```{r}
 #| tbl-cap: "Highest Average Cited Per Year Articles"
 
@@ -186,7 +194,6 @@ bibressum_countrytable <- tibble(Rank = 1:25,
 bibressum_countrytable
 ```
 
-
 ```{r}
 bib_concolab <- metaTagExtraction(bibds_pm, Field = "AU_CO", sep = ";")
 
@@ -208,12 +215,11 @@ bib_concolab_Plot <- networkPlot(bib_concolab_NetMatrix,
                                  )
 ```
 
-::: {.callout-tip}
+::: callout-tip
 ## Biblioshiny
 
 for collaboration network, using biblioshiny is nicer
 :::
-
 
 ## Institution
 
@@ -227,7 +233,6 @@ bibres_insttable <- tibble(Rank = seq_along(bibres_instlist),
 
 bibres_insttable
 ```
-
 
 ```{r}
 bib_educolab_NetMatrix <- biblioNetwork(bibds_pm, analysis = "collaboration",
@@ -249,7 +254,6 @@ bib_educolab_Plot <- networkPlot(bib_educolab_NetMatrix,
                                  Title = "Institutions collaboration")
 
 ```
-
 
 ## Journal
 
@@ -295,7 +299,7 @@ bib_bradfordtable
 #                              labelsize = 1, edgesize = 5, edges.min = 5, alpha = 1)
 ```
 
-::: {.callout-warning}
+::: callout-warning
 co-citation network not available
 :::
 
@@ -349,7 +353,7 @@ bibres_autablepercent
 #                                    alpha = .7)
 ```
 
-::: {.callout-warning}
+::: callout-warning
 co-citation network not available
 :::
 
@@ -371,7 +375,7 @@ cbind(Rank = 1:25, bibres_summary$MostRelKeywords)
 #                              label.n = 20, edges.min = 10)
 ```
 
-::: {.callout-tip}
+::: callout-tip
 ## Biblioshiny
 
 for keyword co-occurence network, using biblioshiny is nicer
