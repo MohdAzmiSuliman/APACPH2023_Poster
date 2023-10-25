@@ -1,11 +1,21 @@
 ---
-title: "APACPH Poster - Bibliometric"
+title: "APACPH-23-136: RESEARCH TREND ON STROKE CAREGIVER BURDEN, A BIBLIOMETRIC ANALYSIS"
+author:
+  - name: Mohd Azmi Bin Suliman
+    orcid: 0000-0002-2125-3811
+    email: azmi.suliman@moh.gov.my
+    affiliations:
+      - name: Institut Kesihatan Umum
+        city: Shah Alam
+        state: Selangor
+        country: Malaysia
+        postal-code: 40170
 date: last-modified
 date-format: "dddd, DD/MM/YYYY"
 format: 
   html:
     theme: sandstone
-    code-fold: true
+    code-fold: show
     code-copy: hover
     code-overflow: wrap
     code-tools: true
@@ -26,20 +36,16 @@ fig-dpi: 320
 dpi: 320
 ---
 
-# Preamble
-
-
-
-# Analysis
+# Data Preparation (Setup)
 
 ```{r}
 #| label: setup
 
 pacman::p_load(tidyverse, 
-               bibliometrix,
+               bibliometrix,  # bibliometric analysis software
                janitor,       # data cleaning
-               stringr,
-               kableExtra)
+               stringr,       # data wrangling – string manipulation	
+               kableExtra)    # nice table
 
 bibds_pm <- convert2df(file = "23-05-22 scopus search.bib",
                        dbsource = "scopus",
@@ -47,58 +53,37 @@ bibds_pm <- convert2df(file = "23-05-22 scopus search.bib",
 
 bibds_pm95_10 <- bibds_pm %>% 
   filter(PY <= 2011)
-
 bibds_pm11_22 <- bibds_pm %>% 
   filter(PY >= 2011)
-
-missingData(bibds_pm)
 
 bibres <- biblioAnalysis(bibds_pm, sep = ";")
 bibres95_10 <- biblioAnalysis(bibds_pm95_10, sep = ";")
 bibres11_22 <- biblioAnalysis(bibds_pm11_22, sep = ";")
-
-
 ```
+
+# Result
 
 ## General Information
 
 ```{r}
-
 bibres_summary <- summary(bibres, k = 25)
-bibres_summary95_10 <- summary(bibres95_10, k = 25)
-bibres_summary11_22 <- summary(bibres11_22, k = 25)
-
 #plot(bibres, k = 25)
 ```
 
-### Publication per year
-
 ```{r}
-subset1 <- tibble(Year = 1995:2011,
-                  n = 1.5 * exp(0.08 * (1995:2011 -1995)))
-subset2 <- tibble(Year = 2011:2022, 
-                  n = 5.5 * exp(0.13 * (2011:2022 -2011))) 
+#| results: hide
 
-
-tibble(Article = rownames(bibds_pm),
-       Year = bibds_pm$PY) %>% 
-  group_by(Year) %>% 
-  summarise(n = n()) %>% 
-  ggplot(aes(x = Year, y = n)) +
-  geom_area(alpha = .2) +
-  geom_point() +
-  geom_line() +
-  geom_line(data = subset1, linetype = 2, linewidth = 1, alpha = .4) +
-  geom_line(data = subset2, linetype = 4, linewidth = 1, alpha = .4) +
-  scale_y_continuous(breaks = seq(0,28,4)) +
-  scale_x_continuous(breaks = seq(1987,2023,4)) +
-  coord_cartesian(ylim = c(0,28)) +
-  labs(x = "Year", y = "Number of Publication") +
-  theme_bw()
+bibres_summary95_10 <- summary(bibres95_10, k = 25)
+bibres_summary11_22 <- summary(bibres11_22, k = 25)
 ```
 
 
+## Publication per year
+
 ```{r}
+#| fig-cap: "Annual Output of Research"
+
+
 subset1 <- tibble(Year = 1995:2011,
                   n = 1.5 * exp(0.08 * (1995:2011 -1995)))
 subset2 <- tibble(Year = 2011:2022, 
@@ -134,24 +119,45 @@ pubnoplot <- tibble(Article = rownames(bibds_pm),
   guides(color = "none")
 
 pubnoplot
-
-ggsave("pubnoplot.png", plot = pubnoplot, width = 6, height = 4.5, dpi = 320)
-
 ```
 
-
-## Language
+## Top Publication (influential articles)
 
 ```{r}
-bib_lang <- bibds_pm %>% 
-  group_by(LA) %>% 
-  summarise(n = n()) %>% 
-  mutate(percent = n / sum(n) * 100,
-         percent = round(percent, 1)) %>% 
-  arrange(desc(n))
+#| tbl-cap: "Most Cited Articles"
 
-bib_lang
+tibble(bibres_summary$MostCitedPapers) %>% 
+  select(DOI, TC, TCperYear) %>% 
+  arrange(desc(TCperYear)) %>% 
+  head(n = 10) %>% 
+  kable() %>% kable_classic()
 ```
+
+
+```{r}
+#| tbl-cap: "Highest Average Cited Per Year Articles"
+
+tibble(Title = bibds_pm$TI,
+       Author = bibds_pm$AU,
+       Year = bibds_pm$PY,
+       DOI = bibds_pm$DI,
+       Citations = bibds_pm$TC) %>% 
+  mutate(across(.cols = c(Title, Author), .fns = str_to_title)) %>% 
+  arrange(desc(Citations)) %>% 
+  head(n=10) %>% 
+  kable() %>% kable_classic()
+```
+
+## Thematic Map
+
+```{r}
+bib_thememap <- thematicMap(bibds_pm, field = "DE", n = 200, minfreq = 20, 
+                            stemming = F, size = .5, n.labels = 4, repel = T)
+
+plot(bib_thememap$map)
+```
+
+# Other (not included in poster)
 
 ## Countries
 
@@ -202,7 +208,11 @@ bib_concolab_Plot <- networkPlot(bib_concolab_NetMatrix,
                                  )
 ```
 
+::: {.callout-tip}
+## Biblioshiny
+
 for collaboration network, using biblioshiny is nicer
+:::
 
 
 ## Institution
@@ -242,8 +252,6 @@ bib_educolab_Plot <- networkPlot(bib_educolab_NetMatrix,
 
 
 ## Journal
-
-
 
 ```{r}
 bibres_sourcelist <- bibres$Sources
@@ -287,8 +295,9 @@ bib_bradfordtable
 #                              labelsize = 1, edgesize = 5, edges.min = 5, alpha = 1)
 ```
 
+::: {.callout-warning}
 co-citation network not available
-
+:::
 
 ## Author
 
@@ -340,34 +349,9 @@ bibres_autablepercent
 #                                    alpha = .7)
 ```
 
-error also
-
-## Articles
-
-```{r}
-tibble(bibres_summary$MostCitedPapers) %>% 
-  select(DOI, TC, TCperYear) %>% 
-  arrange(desc(TCperYear)) %>% 
-  head(n = 10) %>% 
-  kable() %>% kable_classic()
-  
-
-```
-
-
-
-
-```{r}
-tibble(Title = bibds_pm$TI,
-       Author = bibds_pm$AU,
-       Year = bibds_pm$PY,
-       DOI = bibds_pm$DI,
-       Citations = bibds_pm$TC) %>% 
-  mutate(across(.cols = c(Title, Author), .fns = str_to_title)) %>% 
-  arrange(desc(Citations)) %>% 
-  head(n=10) %>% 
-  kable() %>% kable_classic()
-```
+::: {.callout-warning}
+co-citation network not available
+:::
 
 ## Keyword
 
@@ -387,17 +371,8 @@ cbind(Rank = 1:25, bibres_summary$MostRelKeywords)
 #                              label.n = 20, edges.min = 10)
 ```
 
-for co-occurence network, using biblioshiny is nicer
+::: {.callout-tip}
+## Biblioshiny
 
-
-```{r}
-bib_thememap <- thematicMap(bibds_pm, field = "DE", n = 200, minfreq = 20, 
-                            stemming = F, size = .5, n.labels = 4, repel = T)
-
-plot(bib_thememap$map)
-
-ggsave("thematicmap.png", plot = bib_thememap$map)
-```
-
-
-
+for keyword co-occurence network, using biblioshiny is nicer
+:::
